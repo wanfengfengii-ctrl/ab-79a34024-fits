@@ -1,0 +1,26 @@
+name: fits-cutout
+
+services:
+  api:
+    build: .
+    image: fits-cutout-api:latest
+    ports:
+      - "${API_PORT:-8080}:8000"
+    healthcheck:
+      test: ["CMD", "python", "-c",
+             "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=3).read()"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 5s
+    restart: unless-stopped
+
+  verify:
+    build: .
+    image: fits-cutout-api:latest
+    depends_on:
+      api:
+        condition: service_healthy
+    environment:
+      API_BASE_URL: http://api:8000
+    command: ["python", "-m", "verify.run"]
